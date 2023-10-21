@@ -9,8 +9,8 @@ class Ball:
     def __init__(self, x=400, y=300, velocity=1):
         if Ball.image is None:
             Ball.image = load_image("ball.png")
-        if Ball.shadowImage is None:
-            Ball.shadowImage = load_image("ballshadow.png")
+        # if Ball.shadowImage is None:
+        #     Ball.shadowImage = load_image("ball_shadow.png")
         self.x, self.y, self.velocity = x, y, velocity
         self.frame, self.height = 0, 3
 
@@ -29,7 +29,7 @@ class Ball:
         self.image.clip_draw(
             frame_x, frame_y, frame_width, frame_height, self.x, self.y
         )
-        self.shadowImage.draw(self.x, self.y - self.height)
+        # self.shadowImage.draw(self.x, self.y - self.height)
 
     def update(self):
         self.y += self.velocity

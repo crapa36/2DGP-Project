@@ -8,6 +8,7 @@ from pico2d import (
     SDLK_SPACE,
     SDLK_LEFT,
     SDLK_RIGHT,
+    delay,
 )
 from ball import Ball
 import game_world
@@ -51,9 +52,6 @@ class Idle:
         elif boy.face_dir == 1:
             boy.action = 3
         boy.dir = 0
-        boy.frame = 0
-        boy.wait_time = get_time()  # pico2d import 필요
-        pass
 
     @staticmethod
     def exit(boy, e):
@@ -63,8 +61,6 @@ class Idle:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) % 10
-        if get_time() - boy.wait_time > 2:
-            boy.state_machine.handle_event(("TIME_OUT", 0))
 
     @staticmethod
     def draw(boy):
@@ -79,11 +75,23 @@ class Idle:
         # 현재 프레임의 x, y 좌표 계산
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
-
-        # boy.x와 boy.y에 현재 프레임의 이미지를 출력
-        boy.idleImage.clip_draw(
-            frame_x, frame_y, frame_width, frame_height, boy.x, boy.y
-        )
+        if boy.face_dir <= 0:
+            boy.idleImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, boy.x, boy.y
+            )
+        else:
+            boy.idleImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                boy.x,
+                boy.y,
+                40,
+                40,
+            )
 
 
 class Run:
@@ -93,6 +101,7 @@ class Run:
             boy.dir, boy.face_dir, boy.action = 1, 1, 1
         elif left_down(e) or right_up(e):  # 왼쪽으로 RUN
             boy.dir, boy.face_dir, boy.action = -1, -1, 0
+        boy.frame = 0
 
     @staticmethod
     def exit(boy, e):
@@ -103,7 +112,6 @@ class Run:
     def do(boy):
         boy.frame = (boy.frame + 1) % 7
         boy.x += boy.dir * 5
-        pass
 
     @staticmethod
     def draw(boy):
@@ -127,6 +135,61 @@ class Run:
             )
         else:
             boy.runImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                boy.x,
+                boy.y,
+                40,
+                40,
+            )
+
+
+class Stop:
+    @staticmethod
+    def enter(boy, e):
+        if right_down(e) or left_up(e):  # 오른쪽으로 RUN
+            boy.face_dir, boy.action = 1, 1
+        elif left_down(e) or right_up(e):  # 왼쪽으로 RUN
+            boy.face_dir, boy.action = -1, 0
+        boy.frame = 0
+
+    @staticmethod
+    def exit(boy, e):
+        if space_down(e):
+            boy.fire_ball()
+
+    @staticmethod
+    def do(boy):
+        boy.frame = boy.frame + 1
+        if boy.frame >= 11:
+            boy.state_machine.handle_event(("TIME_OUT", 0))
+
+    @staticmethod
+    def draw(boy):
+        # 각 프레임의 크기와 스프라이트 시트의 가로 및 세로 줄 수
+        frame_width = 40
+        frame_height = 40
+        sheet_columns = 3
+        sheet_rows = 4
+
+        # 현재 프레임의 인덱스 계산
+        frame_index = boy.frame % (sheet_columns * sheet_rows)
+
+        # 현재 프레임의 x, y 좌표 계산
+        frame_x = (frame_index % sheet_columns) * frame_width
+        frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
+
+        # boy.x와 boy.y에 현재 프레임의 이미지를 출력
+        if boy.face_dir <= 0:
+            boy.stopImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, boy.x, boy.y
+            )
+        else:
+            boy.stopImage.clip_composite_draw(
                 frame_x,
                 frame_y,
                 frame_width,
@@ -194,17 +257,23 @@ class StateMachine:
                 left_down: Run,
                 left_up: Run,
                 right_up: Run,
-                # time_out: Sleep,
                 space_down: Idle,
             },
             Run: {
-                right_down: Idle,
-                left_down: Idle,
-                right_up: Idle,
-                left_up: Idle,
+                right_down: Stop,
+                left_down: Stop,
+                right_up: Stop,
+                left_up: Stop,
                 space_down: Run,
             },
-            # Sleep: {right_down: Run, left_down: Run, right_up: Run, left_up: Run},
+            Stop: {
+                right_down: Run,
+                left_down: Run,
+                left_up: Run,
+                right_up: Run,
+                time_out: Idle,
+                space_down: Idle,
+            },
         }
 
     def start(self):

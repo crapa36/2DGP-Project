@@ -47,16 +47,11 @@ def time_out(e):
 class Idle:
     @staticmethod
     def enter(boy, e):
-        if boy.face_dir == -1:
-            boy.action = 2
-        elif boy.face_dir == 1:
-            boy.action = 3
         boy.dir = 0
 
     @staticmethod
     def exit(boy, e):
-        if space_down(e):
-            boy.fire_ball()
+        pass
 
     @staticmethod
     def do(boy):
@@ -98,20 +93,26 @@ class Run:
     @staticmethod
     def enter(boy, e):
         if right_down(e) or left_up(e):  # 오른쪽으로 RUN
-            boy.dir, boy.face_dir, boy.action = 1, 1, 1
+            boy.dir, boy.face_dir = 1, 1
         elif left_down(e) or right_up(e):  # 왼쪽으로 RUN
-            boy.dir, boy.face_dir, boy.action = -1, -1, 0
+            (
+                boy.dir,
+                boy.face_dir,
+            ) = (
+                -1,
+                -1,
+            )
         boy.frame = 0
 
     @staticmethod
     def exit(boy, e):
-        if space_down(e):
-            boy.fire_ball()
+        pass
 
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) % 7
-        boy.x += boy.dir * 5
+        moveSpeed = 5
+        boy.x += boy.dir * moveSpeed
 
     @staticmethod
     def draw(boy):
@@ -129,7 +130,7 @@ class Run:
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
 
         # boy.x와 boy.y에 현재 프레임의 이미지를 출력
-        if boy.dir <= 0:
+        if boy.face_dir <= 0:
             boy.runImage.clip_draw(
                 frame_x, frame_y, frame_width, frame_height, boy.x, boy.y
             )
@@ -148,25 +149,70 @@ class Run:
             )
 
 
-class Stop:
+class Serve:
     @staticmethod
     def enter(boy, e):
-        if right_down(e) or left_up(e):  # 오른쪽으로 RUN
-            boy.face_dir, boy.action = 1, 1
-        elif left_down(e) or right_up(e):  # 왼쪽으로 RUN
-            boy.face_dir, boy.action = -1, 0
         boy.frame = 0
 
     @staticmethod
     def exit(boy, e):
-        if space_down(e):
-            boy.fire_ball()
+        boy.fire_ball()
 
     @staticmethod
     def do(boy):
         boy.frame = boy.frame + 1
+
+    @staticmethod
+    def draw(boy):
+        # 각 프레임의 크기와 스프라이트 시트의 가로 및 세로 줄 수
+        frame_width = 40
+        frame_height = 60
+        sheet_columns = 4
+        sheet_rows = 3
+
+        # 현재 프레임의 인덱스 계산
+        frame_index = boy.frame % (sheet_columns * sheet_rows)
+
+        # 현재 프레임의 x, y 좌표 계산
+        frame_x = (frame_index % sheet_columns) * frame_width
+        frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
+
+        # boy.x와 boy.y에 현재 프레임의 이미지를 출력
+        if boy.face_dir <= 0:
+            boy.serveImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, boy.x, boy.y
+            )
+        else:
+            boy.serveImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                boy.x,
+                boy.y,
+                40,
+                60,
+            )
         if boy.frame >= 11:
             boy.state_machine.handle_event(("TIME_OUT", 0))
+
+
+class Stop:
+    @staticmethod
+    def enter(boy, e):
+        boy.frame = 0
+
+    @staticmethod
+    def exit(boy, e):
+        pass
+
+    @staticmethod
+    def do(boy):
+        boy.frame = boy.frame + 1
+        moveSpeed = 0.3
+        boy.x += boy.dir * moveSpeed
 
     @staticmethod
     def draw(boy):
@@ -201,6 +247,8 @@ class Stop:
                 40,
                 40,
             )
+        if boy.frame >= 10:
+            boy.state_machine.handle_event(("TIME_OUT", 0))
 
 
 # class Sleep:
@@ -257,14 +305,14 @@ class StateMachine:
                 left_down: Run,
                 left_up: Run,
                 right_up: Run,
-                space_down: Idle,
+                space_down: Serve,
             },
             Run: {
                 right_down: Stop,
                 left_down: Stop,
                 right_up: Stop,
                 left_up: Stop,
-                space_down: Run,
+                space_down: Serve,
             },
             Stop: {
                 right_down: Run,
@@ -272,8 +320,9 @@ class StateMachine:
                 left_up: Run,
                 right_up: Run,
                 time_out: Idle,
-                space_down: Idle,
+                space_down: Serve,
             },
+            Serve: {time_out: Idle},
         }
 
     def start(self):
@@ -321,5 +370,5 @@ class Boy:
         self.state_machine.draw()
 
     def fire_ball(self):
-        ball = Ball(self.x, self.y, 3)
-        game_world.add_object(ball, 1)
+        ball = Ball(self.x, self.y + 10, self.face_dir, 5)
+        game_world.add_object(ball, 0)

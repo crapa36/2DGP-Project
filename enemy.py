@@ -11,15 +11,18 @@ from pico2d import (
     SDLK_RIGHT,
     delay,
 )
-
 from ball import Ball
-
 import game_world
+import game_framework
 
-
-# state event check
-
-# ( state event type, event value )
+PIXEL_PER_METER = 10.0 / 0.3  # 10 pixel 30 cm
+RUN_SPEED_KMPH = 20.0  # Km / Hour
+RUN_SPEED_MPM = RUN_SPEED_KMPH * 1000.0 / 60.0
+RUN_SPEED_MPS = RUN_SPEED_MPM / 60.0
+RUN_SPEED_PPS = RUN_SPEED_MPS * PIXEL_PER_METER
+TIME_PER_ACTION = 1
+ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
+FRAMES_PER_ACTION = 20
 
 
 def right_down(e):
@@ -46,7 +49,8 @@ def time_out(e):
     return e[0] == "TIME_OUT"
 
 
-# time_out = lambda e : e[0] == 'TIME_OUT'
+def not_served(e):
+    return e[0] == "NOT_SERVED"
 
 
 class Idle:
@@ -60,7 +64,10 @@ class Idle:
 
     @staticmethod
     def do(enemy):
-        enemy.frame = (enemy.frame + 1) % 10
+        enemy.frame = (
+            enemy.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        ) % 10
 
     @staticmethod
     def draw(enemy):
@@ -74,7 +81,7 @@ class Idle:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = enemy.frame % (sheet_columns * sheet_rows)
+        frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -125,11 +132,16 @@ class Run:
 
     @staticmethod
     def do(enemy):
-        enemy.frame = (enemy.frame + 1) % 10
+        enemy.frame = (
+            enemy.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        ) % 10
 
-        moveSpeed = 5
-
-        enemy.x += enemy.dir * moveSpeed
+        enemy.x += enemy.dir * RUN_SPEED_PPS * game_framework.frame_time
+        if enemy.x < 25:
+            enemy.x = 25
+        elif enemy.x > 350 - 25:
+            enemy.x = 350 - 25
 
     @staticmethod
     def draw(enemy):
@@ -145,7 +157,7 @@ class Run:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = enemy.frame % (sheet_columns * sheet_rows)
+        frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -157,13 +169,13 @@ class Run:
 
         if enemy.face_dir <= 0:
             enemy.runImage.clip_draw(
-                frame_x, frame_y, frame_width, frame_height, enemy.x, enemy.y
+                int(frame_x), int(frame_y), frame_width, frame_height, enemy.x, enemy.y
             )
 
         else:
             enemy.runImage.clip_composite_draw(
-                frame_x,
-                frame_y,
+                int(frame_x),
+                int(frame_y),
                 frame_width,
                 frame_height,
                 0,
@@ -182,11 +194,14 @@ class Serve:
 
     @staticmethod
     def exit(enemy, e):
-        enemy.fire_ball()
+        enemy.not_served = False
 
     @staticmethod
     def do(enemy):
-        enemy.frame = enemy.frame + 1
+        enemy.frame = (
+            enemy.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
 
     @staticmethod
     def draw(enemy):
@@ -202,7 +217,7 @@ class Serve:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = enemy.frame % (sheet_columns * sheet_rows)
+        frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -232,6 +247,59 @@ class Serve:
             )
 
         if enemy.frame >= 11:
+            enemy.fire_ball()
+
+            enemy.state_machine.handle_event(("TIME_OUT", 0))
+
+
+class Swing:
+    @staticmethod
+    def enter(enemy, e):
+        if enemy.not_served:
+            enemy.state_machine.handle_event(("NOT_SERVED", 0))
+        enemy.frame = 0
+
+    @staticmethod
+    def exit(enemy, e):
+        pass
+
+    @staticmethod
+    def do(enemy):
+        enemy.frame = (
+            enemy.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
+
+    @staticmethod
+    def draw(enemy):
+        frame_width = 40
+        frame_height = 40
+        sheet_columns = 3
+        sheet_rows = 3
+        frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
+        frame_x = (frame_index % sheet_columns) * frame_width
+        frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
+
+        if enemy.face_dir <= 0:
+            enemy.swingImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, enemy.x, enemy.y
+            )
+
+        else:
+            enemy.swingImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                enemy.x,
+                enemy.y,
+                40,
+                40,
+            )
+
+        if enemy.frame >= 6:
             enemy.state_machine.handle_event(("TIME_OUT", 0))
 
 
@@ -246,11 +314,12 @@ class Stop:
 
     @staticmethod
     def do(enemy):
-        enemy.frame = enemy.frame + 1
+        enemy.frame = (
+            enemy.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
 
-        moveSpeed = 0.3
-
-        enemy.x += enemy.dir * moveSpeed
+        enemy.x += (enemy.dir * RUN_SPEED_PPS * game_framework.frame_time) / 10
 
     @staticmethod
     def draw(enemy):
@@ -266,7 +335,7 @@ class Stop:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = enemy.frame % (sheet_columns * sheet_rows)
+        frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -299,88 +368,6 @@ class Stop:
             enemy.state_machine.handle_event(("TIME_OUT", 0))
 
 
-# class Sleep:
-
-#     @staticmethod
-
-#     def enter(enemy, e):
-
-#         enemy.frame = 0
-
-#         pass
-
-
-#     @staticmethod
-
-#     def exit(enemy, e):
-
-#         pass
-
-
-#     @staticmethod
-
-#     def do(enemy):
-
-#         enemy.frame = (enemy.frame + 1) % 8
-
-
-#     @staticmethod
-
-#     def draw(enemy):
-
-#         if enemy.face_dir == -1:
-
-#             enemy.image.clip_composite_draw(
-
-#                 enemy.frame * 100,
-
-#                 200,
-
-#                 100,
-
-#                 100,
-
-#                 -3.141592 / 2,
-
-#                 "",
-
-#                 enemy.x + 25,
-
-#                 enemy.y - 25,
-
-#                 100,
-
-#                 100,
-
-#             )
-
-#         else:
-
-#             enemy.image.clip_composite_draw(
-
-#                 enemy.frame * 100,
-
-#                 300,
-
-#                 100,
-
-#                 100,
-
-#                 3.141592 / 2,
-
-#                 "",
-
-#                 enemy.x - 25,
-
-#                 enemy.y - 25,
-
-#                 100,
-
-#                 100,
-
-#             )
-
-
 class StateMachine:
     def __init__(self, enemy):
         self.enemy = enemy
@@ -391,16 +378,14 @@ class StateMachine:
             Idle: {
                 right_down: Run,
                 left_down: Run,
-                left_up: Run,
-                right_up: Run,
-                space_down: Serve,
+                space_down: Swing,
             },
             Run: {
                 right_down: Stop,
                 left_down: Stop,
                 right_up: Stop,
                 left_up: Stop,
-                space_down: Serve,
+                space_down: Swing,
             },
             Stop: {
                 right_down: Run,
@@ -408,9 +393,13 @@ class StateMachine:
                 left_up: Run,
                 right_up: Run,
                 time_out: Idle,
-                space_down: Serve,
+                space_down: Swing,
             },
             Serve: {time_out: Idle},
+            Swing: {
+                time_out: Idle,
+                not_served: Serve,
+            },
         }
 
     def start(self):
@@ -441,7 +430,7 @@ class Enemy:
         self.x, self.y = 175, 440
 
         self.frame = 0
-
+        self.not_served = True
         self.action = 3
 
         self.dir = 0
@@ -472,6 +461,6 @@ class Enemy:
         self.state_machine.draw()
 
     def fire_ball(self):
-        ball = Ball(self.x, self.y - 10, -self.face_dir, -5)
+        ball = Ball(self.x, self.y - 10, -self.face_dir * 25, -200)
 
         game_world.add_object(ball, 0)

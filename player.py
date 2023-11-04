@@ -1,6 +1,4 @@
 # 이것은 각 상태들을 객체로 구현한 것임.
-
-
 from pico2d import (
     get_time,
     load_image,
@@ -11,15 +9,19 @@ from pico2d import (
     SDLK_RIGHT,
     delay,
 )
-
 from ball import Ball
-
 import game_world
+import game_framework
 
-
-# state event check
-
-# ( state event type, event value )
+PIXEL_PER_METER = 10.0 / 0.3  # 10 pixel 30 cm
+RUN_SPEED_KMPH = 20.0  # Km / Hour
+RUN_SPEED_MPM = RUN_SPEED_KMPH * 1000.0 / 60.0
+RUN_SPEED_MPS = RUN_SPEED_MPM / 60.0
+RUN_SPEED_PPS = RUN_SPEED_MPS * PIXEL_PER_METER
+TIME_PER_ACTION = 1
+ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
+FRAMES_PER_ACTION = 20
+not_served = True
 
 
 def right_down(e):
@@ -46,7 +48,8 @@ def time_out(e):
     return e[0] == "TIME_OUT"
 
 
-# time_out = lambda e : e[0] == 'TIME_OUT'
+def unserved(e):
+    return e[0] == "UNSERVED"
 
 
 class Idle:
@@ -60,7 +63,10 @@ class Idle:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + 1) % 10
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        ) % 10
 
     @staticmethod
     def draw(player):
@@ -74,7 +80,7 @@ class Idle:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = player.frame % (sheet_columns * sheet_rows)
+        frame_index = int(player.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -125,11 +131,16 @@ class Run:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + 1) % 7
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        ) % 7
 
-        moveSpeed = 5
-
-        player.x += player.dir * moveSpeed
+        player.x += player.dir * RUN_SPEED_PPS * game_framework.frame_time
+        if player.x < 25:
+            player.x = 25
+        elif player.x > 350 - 25:
+            player.x = 350 - 25
 
     @staticmethod
     def draw(player):
@@ -145,7 +156,7 @@ class Run:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = player.frame % (sheet_columns * sheet_rows)
+        frame_index = int(player.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -182,11 +193,14 @@ class Serve:
 
     @staticmethod
     def exit(player, e):
-        player.fire_ball()
+        player.not_served = False
 
     @staticmethod
     def do(player):
-        player.frame = player.frame + 1
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
 
     @staticmethod
     def draw(player):
@@ -202,7 +216,7 @@ class Serve:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = player.frame % (sheet_columns * sheet_rows)
+        frame_index = int(player.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -232,6 +246,59 @@ class Serve:
             )
 
         if player.frame >= 11:
+            player.fire_ball(player.face_dir * 25, 200)
+
+            player.state_machine.handle_event(("TIME_OUT", 0))
+
+
+class Swing:
+    @staticmethod
+    def enter(player, e):
+        if player.not_served:
+            player.state_machine.handle_event(("UNSERVED", 0))
+        player.frame = 0
+
+    @staticmethod
+    def exit(player, e):
+        pass
+
+    @staticmethod
+    def do(player):
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
+
+    @staticmethod
+    def draw(player):
+        frame_width = 40
+        frame_height = 40
+        sheet_columns = 4
+        sheet_rows = 2
+        frame_index = int(player.frame) % (sheet_columns * sheet_rows)
+        frame_x = (frame_index % sheet_columns) * frame_width
+        frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
+
+        if player.face_dir <= 0:
+            player.swingImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, player.x, player.y
+            )
+
+        else:
+            player.swingImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                player.x,
+                player.y,
+                40,
+                40,
+            )
+
+        if player.frame >= 5:
             player.state_machine.handle_event(("TIME_OUT", 0))
 
 
@@ -246,11 +313,12 @@ class Stop:
 
     @staticmethod
     def do(player):
-        player.frame = player.frame + 1
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
 
-        moveSpeed = 0.3
-
-        player.x += player.dir * moveSpeed
+        player.x += (player.dir * RUN_SPEED_PPS * game_framework.frame_time) / 10
 
     @staticmethod
     def draw(player):
@@ -266,7 +334,7 @@ class Stop:
 
         # 현재 프레임의 인덱스 계산
 
-        frame_index = player.frame % (sheet_columns * sheet_rows)
+        frame_index = int(player.frame) % (sheet_columns * sheet_rows)
 
         # 현재 프레임의 x, y 좌표 계산
 
@@ -299,88 +367,6 @@ class Stop:
             player.state_machine.handle_event(("TIME_OUT", 0))
 
 
-# class Sleep:
-
-#     @staticmethod
-
-#     def enter(player, e):
-
-#         player.frame = 0
-
-#         pass
-
-
-#     @staticmethod
-
-#     def exit(player, e):
-
-#         pass
-
-
-#     @staticmethod
-
-#     def do(player):
-
-#         player.frame = (player.frame + 1) % 8
-
-
-#     @staticmethod
-
-#     def draw(player):
-
-#         if player.face_dir == -1:
-
-#             player.image.clip_composite_draw(
-
-#                 player.frame * 100,
-
-#                 200,
-
-#                 100,
-
-#                 100,
-
-#                 -3.141592 / 2,
-
-#                 "",
-
-#                 player.x + 25,
-
-#                 player.y - 25,
-
-#                 100,
-
-#                 100,
-
-#             )
-
-#         else:
-
-#             player.image.clip_composite_draw(
-
-#                 player.frame * 100,
-
-#                 300,
-
-#                 100,
-
-#                 100,
-
-#                 3.141592 / 2,
-
-#                 "",
-
-#                 player.x - 25,
-
-#                 player.y - 25,
-
-#                 100,
-
-#                 100,
-
-#             )
-
-
 class StateMachine:
     def __init__(self, player):
         self.player = player
@@ -391,16 +377,14 @@ class StateMachine:
             Idle: {
                 right_down: Run,
                 left_down: Run,
-                left_up: Run,
-                right_up: Run,
-                space_down: Serve,
+                space_down: Swing,
             },
             Run: {
                 right_down: Stop,
                 left_down: Stop,
                 right_up: Stop,
                 left_up: Stop,
-                space_down: Serve,
+                space_down: Swing,
             },
             Stop: {
                 right_down: Run,
@@ -408,9 +392,13 @@ class StateMachine:
                 left_up: Run,
                 right_up: Run,
                 time_out: Idle,
-                space_down: Serve,
+                space_down: Swing,
             },
             Serve: {time_out: Idle},
+            Swing: {
+                time_out: Idle,
+                unserved: Serve,
+            },
         }
 
     def start(self):
@@ -471,7 +459,10 @@ class Player:
     def draw(self):
         self.state_machine.draw()
 
-    def fire_ball(self):
-        ball = Ball(self.x, self.y + 10, self.face_dir, 5)
-
+    def fire_ball(self, x_velocity, y_velocity):
+        ball = Ball(self.x, self.y + 10, x_velocity, y_velocity)
         game_world.add_object(ball, 0)
+
+
+def ball_cheak_served(e):
+    not_served = e

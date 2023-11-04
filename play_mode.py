@@ -4,7 +4,7 @@ from player import Player
 from enemy import Enemy
 from ball import Ball
 import game_world
-
+import game_framework
 
 map_width, map_height = 350, 560
 
@@ -13,81 +13,45 @@ map_width, map_height = 350, 560
 
 
 def handle_events():
-    global running
-
     events = get_events()
 
     for event in events:
         if event.type == SDL_QUIT:
-            running = False
+            game_framework.quit()
 
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            running = False
+            game_framework.quit()
 
         else:
             player.handle_event(event)
             enemy.handle_event(event)
 
 
-def reset_world():
-    global running
-
+def init():
     global grass
-
-    global team
-
     global world
-
     global player
     global enemy
-
-    running = True
-
     world = []
-
     grass = Grass(175, 280)
-
     game_world.add_object(grass, 0)
-
     player = Player()
     enemy = Enemy()
-
     world.append(player)
     world.append(enemy)
-
     game_world.add_object(player, 1)
     game_world.add_object(enemy, 1)
 
 
-def update_world():
+def finish():
+    game_world.clear()
+
+
+def update():
     game_world.update()
 
 
-def render_world():
+def draw():
     clear_canvas()
-
     game_world.render()
-
     update_canvas()
-
-
-open_canvas(map_width, map_height)
-reset_world()
-
-
-# game loop
-
-
-while running:
-    handle_events()
-
-    update_world()
-    render_world()
-
-    delay(0.05)
-
-
-# finalization code
-
-
-close_canvas()

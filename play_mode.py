@@ -8,10 +8,6 @@ import game_framework
 
 map_width, map_height = 350, 560
 
-
-# Game object class here
-
-
 def handle_events():
     events = get_events()
 

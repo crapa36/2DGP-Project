@@ -23,7 +23,7 @@ RUN_SPEED_PPS = RUN_SPEED_MPS * PIXEL_PER_METER
 TIME_PER_ACTION = 1
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 20
-
+not_served = True
 
 def right_down(e):
     return e[0] == "INPUT" and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_RIGHT
@@ -49,8 +49,8 @@ def time_out(e):
     return e[0] == "TIME_OUT"
 
 
-def not_served(e):
-    return e[0] == "NOT_SERVED"
+def unserved(e):
+    return e[0] == "UNSERVED"
 
 
 class Idle:
@@ -194,7 +194,8 @@ class Serve:
 
     @staticmethod
     def exit(enemy, e):
-        enemy.not_served = False
+        global not_served
+        not_served = False
 
     @staticmethod
     def do(enemy):
@@ -255,8 +256,9 @@ class Serve:
 class Swing:
     @staticmethod
     def enter(enemy, e):
-        if enemy.not_served:
-            enemy.state_machine.handle_event(("NOT_SERVED", 0))
+        global not_served
+        if not_served:
+            enemy.state_machine.handle_event(("UNSERVED", 0))
         enemy.frame = 0
 
     @staticmethod
@@ -398,7 +400,7 @@ class StateMachine:
             Serve: {time_out: Idle},
             Swing: {
                 time_out: Idle,
-                not_served: Serve,
+                unserved: Serve,
             },
         }
 
@@ -464,3 +466,8 @@ class Enemy:
         ball = Ball(self.x, self.y - 10, -self.face_dir * 25, -200)
 
         game_world.add_object(ball, 0)
+        
+def ball_cheak_served(e):
+    global not_served
+    not_served = e
+

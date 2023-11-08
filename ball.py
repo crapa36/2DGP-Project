@@ -1,7 +1,7 @@
 from pico2d import load_image
 import game_world
 import game_framework
-from player import ball_cheak_served
+
 
 TIME_PER_ACTION = 1
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
@@ -49,5 +49,6 @@ class Ball:
         )
         if self.y < 25 or self.y > 560 - 25:
             game_world.remove_object(self)
-            player.ball_cheak_served(True)
-            enemy.not_served = True
+            import score
+            score.ball_deleted()
+            

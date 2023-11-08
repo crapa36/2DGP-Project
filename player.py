@@ -193,7 +193,8 @@ class Serve:
 
     @staticmethod
     def exit(player, e):
-        player.not_served = False
+        global not_served
+        not_served = False
 
     @staticmethod
     def do(player):
@@ -254,7 +255,8 @@ class Serve:
 class Swing:
     @staticmethod
     def enter(player, e):
-        if player.not_served:
+        global not_served
+        if not_served:
             player.state_machine.handle_event(("UNSERVED", 0))
         player.frame = 0
 
@@ -465,4 +467,5 @@ class Player:
 
 
 def ball_cheak_served(e):
+    global not_served
     not_served = e

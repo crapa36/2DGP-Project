@@ -104,8 +104,7 @@ class Serve:
 
     @staticmethod
     def exit(player, e):
-        global not_served
-        not_served = False
+        pass
 
     @staticmethod
     def do(player):

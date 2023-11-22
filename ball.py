@@ -18,6 +18,8 @@ class Ball:
             Ball.shadowImage = load_image("ball_shadow.png")
         self.x, self.y, self.x_velocity, self.y_velocity = x, y, x_velocity, y_velocity
         self.frame, self.height, self.height_velocity = 0, 10, 25
+        import score
+        score.ball_created()
 
     def draw(self):
         frame_width = 10

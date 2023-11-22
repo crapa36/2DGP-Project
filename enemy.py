@@ -107,8 +107,7 @@ class Serve:
 
     @staticmethod
     def exit(enemy, e):
-        global not_served
-        not_served = False
+        pass
 
     @staticmethod
     def do(enemy):
@@ -200,24 +199,24 @@ class StateMachine:
         self.cur_state = Idle
         self.transitions = {
             Idle: {
-                right_down: Run,
-                left_down: Run,
-                space_down: Swing,
+                # right_down: Run,
+                # left_down: Run,
+                # space_down: Swing,
             },
             Run: {
-                right_down: Stop,
-                left_down: Stop,
-                right_up: Stop,
-                left_up: Stop,
-                space_down: Swing,
+                # right_down: Stop,
+                # left_down: Stop,
+                # right_up: Stop,
+                # left_up: Stop,
+                # space_down: Swing,
             },
             Stop: {
-                right_down: Run,
-                left_down: Run,
-                left_up: Run,
-                right_up: Run,
+                # right_down: Run,
+                # left_down: Run,
+                # left_up: Run,
+                # right_up: Run,
                 time_out: Idle,
-                space_down: Swing,
+                # space_down: Swing,
             },
             Serve: {time_out: Idle},
             Swing: {
@@ -252,6 +251,7 @@ class Enemy:
         self.action = 3
         self.dir = 0
         self.face_dir = 1
+        self.turn=False
         self.idleImage = load_image("enemy_idle.png")
         self.runImage = load_image("enemy_run.png")
         self.serveImage = load_image("enemy_serve.png")
@@ -303,6 +303,10 @@ class Enemy:
         self.speed = RUN_SPEED_PPS
         self.x += self.speed * self.dir * game_framework.frame_time
 
+    def serve(self):
+        self.state = 'Serve'
+        return BehaviorTree.SUCCESS
+        
     def move_to(self, r=0.5):
         self.state = 'Walk'
         self.move_slightly_to(self.tx, self.ty)

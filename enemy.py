@@ -1,7 +1,10 @@
 from pico2d import get_time, load_image, SDL_KEYDOWN, SDL_KEYUP, SDLK_SPACE, SDLK_LEFT, SDLK_RIGHT, delay
 from ball import Ball
+import play_mode
 import game_world
 import game_framework
+from behavior_tree import BehaviorTree, Action, Sequence, Condition, Selector
+import random
 
 PIXEL_PER_METER = 10.0 / 0.3  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -256,6 +259,8 @@ class Enemy:
         self.stopImage = load_image("enemy_stop.png")
         self.state_machine = StateMachine(self)
         self.state_machine.start()
+        
+        self.build_behavior_tree()
 
     def update(self):
         self.state_machine.update()
@@ -269,7 +274,71 @@ class Enemy:
     def fire_ball(self):
         ball = Ball(self.x, self.y - 10, -self.face_dir * 25, -200)
         game_world.add_object(ball, 0)
+        
+    def set_target_location(self, x=None, y=None):
+        if not x or not y:
+            raise ValueError('Location should be given')
+        self.tx, self.ty = x, y
+        return BehaviorTree.SUCCESS
+    
+    def set_random_location(self):
+        self.tx = random.randint(100, 250)
+        # self.tx, self.ty = 1000, 100
+        return BehaviorTree.SUCCESS
+
+    def move_to_ball(self, r=0.5):
+        self.state = 'Run'
+        self.move_slightly_to(play_mode.ball.x, play_mode.ball.y)
+        if self.distance_less_than(play_mode.ball.x, play_mode.ball.y, self.x, self.y, r):
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.RUNNING
+        
+    def distance_less_than(self, x1, y1, x2, y2, r):
+        distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
+        return distance2 < (PIXEL_PER_METER * r) ** 2
+
+    def move_slightly_to(self, tx):
+        self.dir = (self.x-tx)/(abs(self.x-tx))
+        self.speed = RUN_SPEED_PPS
+        self.x += self.speed * self.dir * game_framework.frame_time
+
+    def move_to(self, r=0.5):
+        self.state = 'Walk'
+        self.move_slightly_to(self.tx, self.ty)
+        if self.distance_less_than(self.tx, self.ty, self.x, self.y, r):
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.RUNNING
+        
+    def serve_cheak():
+        if not_served:
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.FAIL
+        
+        
+    def build_behavior_tree(self):
+        a1= Action('서브하기', self.serve)
+        c1 = Condition('turn_cheak', self.cheak_turn)
+        root = SEQ_turn_cheak = Sequence('턴 체크 후 서브', c1, a2)     
+        
+        a2 = Action('Move to', self.move_to)
+        a3 = Action('Set random location', self.set_random_location)
+        root = SEQ_random_move = Sequence('위치 설정 후 이동', a3, a2)
+        
+        root = SEQ_random_move_and_serve = Sequence('이동 후 서브', SEQ_random_move, SEQ_turn_cheak)
+        
+        a4 = Action('공 추적', self.move_to_ball)
+        c2 = Condition('공 존재 확인', self.serve_cheak())
+        
+        SEQ_ball_chase = Sequence('공 확인 후 추적', c2, a4)
+        root = SEL_chase_or_move = Selector('공추적 또는 랜덤이동', SEQ_ball_chase, SEQ_random_move_and_serve)
+
+        self.bt = BehaviorTree(root)
+
 
 def ball_cheak_served(e):
     global not_served
     not_served = e
+    

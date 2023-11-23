@@ -10,7 +10,7 @@ FRAMES_PER_ACTION = 20
 class Ball:
     image = None
     shadowImage = None
-
+    deleted=None
     def __init__(self, x=400, y=300, x_velocity=1, y_velocity=1):
         if Ball.image is None:
             Ball.image = load_image("ball.png")
@@ -18,8 +18,7 @@ class Ball:
             Ball.shadowImage = load_image("ball_shadow.png")
         self.x, self.y, self.x_velocity, self.y_velocity = x, y, x_velocity, y_velocity
         self.frame, self.height, self.height_velocity = 0, 10, 25
-        import score
-        score.ball_created()
+        self.deleted=False
 
     def draw(self):
         frame_width = 10
@@ -48,6 +47,7 @@ class Ball:
         )
         if self.y < 20 or self.y > 560 - 70:
             game_world.remove_object(self)
-            import score
-            score.ball_deleted()
+            self.deleted=True
+            
+            
             

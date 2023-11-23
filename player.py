@@ -2,6 +2,7 @@ from pico2d import get_time, load_image, SDL_KEYDOWN, SDL_KEYUP, SDLK_SPACE, SDL
 from ball import Ball
 import game_world
 import game_framework
+import score
 
 PIXEL_PER_METER = 10.0 / 0.3  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -104,7 +105,7 @@ class Serve:
 
     @staticmethod
     def exit(player, e):
-        pass
+        score.player_turn = False
 
     @staticmethod
     def do(player):
@@ -130,9 +131,10 @@ class Serve:
 class Swing:
     @staticmethod
     def enter(player, e):
-        global not_served
-        if not_served:
+       
+        if score.ball.deleted and score.player_turn:
             player.state_machine.handle_event(("UNSERVED", 0))
+            
         player.frame = 0
 
     @staticmethod
@@ -264,9 +266,5 @@ class Player:
         self.state_machine.draw()
 
     def fire_ball(self, x_velocity, y_velocity):
-        ball = Ball(self.x, self.y + 10, x_velocity, y_velocity)
-        game_world.add_object(ball, 0)
-
-def ball_cheak_served(e):
-    global not_served
-    not_served = e
+        score.ball = Ball(self.x, self.y + 10, x_velocity, y_velocity)
+        game_world.add_object(score.ball, 0)

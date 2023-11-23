@@ -5,6 +5,7 @@ import game_world
 import game_framework
 from behavior_tree import BehaviorTree, Action, Sequence, Condition, Selector
 import random
+import score
 
 PIXEL_PER_METER = 10.0 / 0.3  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -272,8 +273,8 @@ class Enemy:
         self.state_machine.draw()
 
     def fire_ball(self):
-        ball = Ball(self.x, self.y - 10, -self.face_dir * 25, -200)
-        game_world.add_object(ball, 0)
+        score.ball = Ball(self.x, self.y - 10, -self.face_dir * 25, -200)
+        game_world.add_object(score.ball, 0)
         
     def set_target_location(self, x=None, y=None):
         if not x or not y:

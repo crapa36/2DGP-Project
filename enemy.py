@@ -265,6 +265,7 @@ class Enemy:
 
     def update(self):
         self.state_machine.update()
+        self.bt.run()
 
     def handle_event(self, event):
         self.state_machine.handle_event(("INPUT", event))
@@ -316,17 +317,21 @@ class Enemy:
         else:
             return BehaviorTree.RUNNING
         
-    def serve_cheak():
-        if not_served:
-            return BehaviorTree.SUCCESS
-        else:
+    def serve_cheak(self):
+        if score.ball.deleted:
             return BehaviorTree.FAIL
-        
+        else:
+            return BehaviorTree.SUCCESS
+    def cheak_turn(self):
+        if score.player_turn:
+            return BehaviorTree.FAIL
+        else:
+            return BehaviorTree.SUCCESS
         
     def build_behavior_tree(self):
         a1= Action('서브하기', self.serve)
-        c1 = Condition('turn_cheak', self.cheak_turn)
-        root = SEQ_turn_cheak = Sequence('턴 체크 후 서브', c1, a2)     
+        c1 = Condition('turn_cheaking', self.cheak_turn)
+        root = SEQ_turn_cheak = Sequence('턴 체크 후 서브', c1, a1)     
         
         a2 = Action('Move to', self.move_to)
         a3 = Action('Set random location', self.set_random_location)
@@ -343,7 +348,5 @@ class Enemy:
         self.bt = BehaviorTree(root)
 
 
-def ball_cheak_served(e):
-    global not_served
-    not_served = e
+
     

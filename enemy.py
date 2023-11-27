@@ -289,30 +289,34 @@ class Enemy:
         return BehaviorTree.SUCCESS
 
     def move_to_ball(self, r=0.5):
-        self.state = 'Run'
-        self.move_slightly_to(play_mode.ball.x, play_mode.ball.y)
-        if self.distance_less_than(play_mode.ball.x, play_mode.ball.y, self.x, self.y, r):
+        self.cur_state = Run
+        self.move_slightly_to(score.ball.x)
+        if self.ball_y_bigger(score.ball.y, self.y):
             return BehaviorTree.SUCCESS
         else:
             return BehaviorTree.RUNNING
         
-    def distance_less_than(self, x1, y1, x2, y2, r):
-        distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
-        return distance2 < (PIXEL_PER_METER * r) ** 2
+    def distance_less_than(self, x1, x2, r):
+        distance2 = abs(x1 - x2)
+        return distance2 < (PIXEL_PER_METER * r)
+    
+    def ball_y_bigger(self, y1, y2):
+        
+        return y1>y2
 
     def move_slightly_to(self, tx):
-        self.dir = (self.x-tx)/(abs(self.x-tx))
+        self.dir = -(self.x-tx)/(abs(self.x-tx))
         self.speed = RUN_SPEED_PPS
         self.x += self.speed * self.dir * game_framework.frame_time
 
     def serve(self):
-        self.state = 'Serve'
+        self.cur_state = Serve
         return BehaviorTree.SUCCESS
         
     def move_to(self, r=0.5):
-        self.state = 'Walk'
-        self.move_slightly_to(self.tx, self.ty)
-        if self.distance_less_than(self.tx, self.ty, self.x, self.y, r):
+        self.cur_state = Run
+        self.move_slightly_to(self.tx)
+        if self.distance_less_than(self.tx, self.x, r):
             return BehaviorTree.SUCCESS
         else:
             return BehaviorTree.RUNNING
@@ -340,7 +344,7 @@ class Enemy:
         root = SEQ_random_move_and_serve = Sequence('이동 후 서브', SEQ_random_move, SEQ_turn_cheak)
         
         a4 = Action('공 추적', self.move_to_ball)
-        c2 = Condition('공 존재 확인', self.serve_cheak())
+        c2 = Condition('공 존재 확인', self.serve_cheak)
         
         SEQ_ball_chase = Sequence('공 확인 후 추적', c2, a4)
         root = SEL_chase_or_move = Selector('공추적 또는 랜덤이동', SEQ_ball_chase, SEQ_random_move_and_serve)

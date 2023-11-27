@@ -96,7 +96,7 @@ class Run:
         frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
-        if enemy.face_dir <= 0:
+        if enemy.dir <= 0:
             enemy.runImage.clip_draw(frame_x, frame_y, frame_width, frame_height, enemy.x, enemy.y)
         else:
             enemy.runImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", enemy.x, enemy.y, 40, 40)
@@ -108,7 +108,7 @@ class Serve:
 
     @staticmethod
     def exit(enemy, e):
-        pass
+        score.player_turn = True
 
     @staticmethod
     def do(enemy):
@@ -187,7 +187,7 @@ class Stop:
         frame_index = int(enemy.frame) % (sheet_columns * sheet_rows)
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
-        if enemy.face_dir <= 0:
+        if enemy.dir <= 0:
             enemy.stopImage.clip_draw(frame_x, frame_y, frame_width, frame_height, enemy.x, enemy.y)
         else:
             enemy.stopImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", enemy.x, enemy.y, 40, 40)
@@ -289,10 +289,15 @@ class Enemy:
         return BehaviorTree.SUCCESS
 
     def move_to_ball(self, r=0.5):
-        self.cur_state = Run
-        self.move_slightly_to(score.ball.x)
-        if self.ball_y_bigger(score.ball.y, self.y):
+        if not self.state_machine.cur_state == Run:
+            self.dir=-(self.x-score.ball.x)/abs(self.x-score.ball.x)
+            self.state_machine.cur_state = Run
+        
+        
+        if self.ball_distance(score.ball.x, self.x,score.ball.y,self.y,1) or  score.ball.y>self.y:
+            self.state_machine.cur_state = Stop
             return BehaviorTree.SUCCESS
+        
         else:
             return BehaviorTree.RUNNING
         
@@ -300,23 +305,24 @@ class Enemy:
         distance2 = abs(x1 - x2)
         return distance2 < (PIXEL_PER_METER * r)
     
-    def ball_y_bigger(self, y1, y2):
-        
-        return y1>y2
-
+    def ball_distance(self, x1, y1, x2, y2, r):
+        distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
+        return distance2 < (PIXEL_PER_METER * r) ** 2
+    
     def move_slightly_to(self, tx):
         self.dir = -(self.x-tx)/(abs(self.x-tx))
-        self.speed = RUN_SPEED_PPS
-        self.x += self.speed * self.dir * game_framework.frame_time
 
     def serve(self):
-        self.cur_state = Serve
-        return BehaviorTree.SUCCESS
+        if not self.state_machine.cur_state == Serve:
+            self.state_machine.cur_state = Serve
+        return BehaviorTree.RUNNING
         
-    def move_to(self, r=0.5):
-        self.cur_state = Run
+    def move_to(self, r=25):
+        if not self.state_machine.cur_state == Run:
+            self.state_machine.cur_state = Run
         self.move_slightly_to(self.tx)
         if self.distance_less_than(self.tx, self.x, r):
+            self.state_machine.cur_state = Stop
             return BehaviorTree.SUCCESS
         else:
             return BehaviorTree.RUNNING
@@ -333,13 +339,18 @@ class Enemy:
             return BehaviorTree.SUCCESS
         
     def build_behavior_tree(self):
-        a1= Action('서브하기', self.serve)
-        c1 = Condition('turn_cheaking', self.cheak_turn)
-        root = SEQ_turn_cheak = Sequence('턴 체크 후 서브', c1, a1)     
         
         a2 = Action('Move to', self.move_to)
         a3 = Action('Set random location', self.set_random_location)
         root = SEQ_random_move = Sequence('위치 설정 후 이동', a3, a2)
+        
+        a1= Action('서브하기', self.serve)
+        
+        root = SEQ_serve_and_move = Sequence('서브 후 이동', a1, SEQ_random_move)
+        c1 = Condition('turn_cheaking', self.cheak_turn)
+        root = SEQ_turn_cheak = Sequence('턴 체크 후 서브', c1, SEQ_serve_and_move)     
+        
+
         
         root = SEQ_random_move_and_serve = Sequence('이동 후 서브', SEQ_random_move, SEQ_turn_cheak)
         

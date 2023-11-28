@@ -300,10 +300,15 @@ class Enemy:
         
         else:
             return BehaviorTree.RUNNING
-        
+
+    
+    def ball_find(self, y):
+        return score.ball.x+score.ball.x_velocity*((y-score.ball.y)/score.ball.y_velocity)
+    
     def distance_less_than(self, x1, x2, r):
         distance2 = abs(x1 - x2)
         return distance2 < (PIXEL_PER_METER * r)
+    
     
     def ball_distance(self, x1, y1, x2, y2, r):
         distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2

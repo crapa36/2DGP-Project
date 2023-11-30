@@ -248,11 +248,11 @@ class Player:
         self.action = 3
         self.dir = 0
         self.face_dir = 1
-        self.idleImage = load_image("player_idle.png")
-        self.runImage = load_image("player_run.png")
-        self.serveImage = load_image("player_serve.png")
-        self.swingImage = load_image("player_swing.png")
-        self.stopImage = load_image("player_stop.png")
+        self.idleImage = load_image(".\data\player_idle.png")
+        self.runImage = load_image(".\data\player_run.png")
+        self.serveImage = load_image(".\data\player_serve.png")
+        self.swingImage = load_image(".\data\player_swing.png")
+        self.stopImage = load_image(".\data\player_stop.png")
         self.state_machine = StateMachine(self)
         self.state_machine.start()
 

@@ -253,11 +253,11 @@ class Enemy:
         self.dir = 0
         self.face_dir = 1
         self.turn=False
-        self.idleImage = load_image("enemy_idle.png")
-        self.runImage = load_image("enemy_run.png")
-        self.serveImage = load_image("enemy_serve.png")
-        self.swingImage = load_image("enemy_swing.png")
-        self.stopImage = load_image("enemy_stop.png")
+        self.idleImage = load_image(".\data\enemy_idle.png")
+        self.runImage = load_image(".\data\enemy_run.png")
+        self.serveImage = load_image(".\data\enemy_serve.png")
+        self.swingImage = load_image(".\data\enemy_swing.png")
+        self.stopImage = load_image(".\data\enemy_stop.png")
         self.state_machine = StateMachine(self)
         self.state_machine.start()
         
@@ -284,20 +284,17 @@ class Enemy:
         return BehaviorTree.SUCCESS
     
     def set_random_location(self):
-        self.tx = random.randint(100, 250)
+        self.tx = 150
         # self.tx, self.ty = 1000, 100
         return BehaviorTree.SUCCESS
 
     def move_to_ball(self, r=0.5):
         if not self.state_machine.cur_state == Run:
-            self.dir=-(self.x-score.ball.x)/abs(self.x-score.ball.x)
+            self.dir=-(self.x-score.ball.x)//abs(self.x-score.ball.x)
             self.state_machine.cur_state = Run
-        
-        
-        if self.ball_distance(score.ball.x, self.x,score.ball.y,self.y,1) or  score.ball.y>self.y:
+        if self.ball_distance(score.ball.x, self.x,score.ball.y,self.y,1) or score.ball.y>self.y:
             self.state_machine.cur_state = Stop
             return BehaviorTree.SUCCESS
-        
         else:
             return BehaviorTree.RUNNING
 
@@ -322,7 +319,7 @@ class Enemy:
             self.state_machine.cur_state = Serve
         return BehaviorTree.RUNNING
         
-    def move_to(self, r=25):
+    def move_to(self, r=100):
         if not self.state_machine.cur_state == Run:
             self.state_machine.cur_state = Run
         self.move_slightly_to(self.tx)
@@ -334,28 +331,36 @@ class Enemy:
         
     def serve_cheak(self):
         if score.ball.deleted:
+            if not self.state_machine.cur_state == Idle:
+                self.state_machine.cur_state = Stop
             return BehaviorTree.FAIL
         else:
             return BehaviorTree.SUCCESS
     def cheak_turn(self):
         if score.player_turn:
+            if not self.state_machine.cur_state == Idle:
+                self.state_machine.cur_state = Stop
             return BehaviorTree.FAIL
         else:
             return BehaviorTree.SUCCESS
+    def stay(self):
+        if not self.state_machine.cur_state == Idle:
+            self.state_machine.cur_state = Stop
+        return BehaviorTree.SUCCESS
         
     def build_behavior_tree(self):
-        
+        a0 = Action('대기', self.stay)
         a2 = Action('Move to', self.move_to)
+        root = SEQ_move_than_stay = Sequence('이동 후 대기', a2, a0)
         a3 = Action('Set random location', self.set_random_location)
-        root = SEQ_random_move = Sequence('위치 설정 후 이동', a3, a2)
+        root = SEQ_random_move = Sequence('위치 설정 후 이동', a3, SEQ_move_than_stay)
         
         a1= Action('서브하기', self.serve)
         
         root = SEQ_serve_and_move = Sequence('서브 후 이동', a1, SEQ_random_move)
+        
         c1 = Condition('turn_cheaking', self.cheak_turn)
         root = SEQ_turn_cheak = Sequence('턴 체크 후 서브', c1, SEQ_serve_and_move)     
-        
-
         
         root = SEQ_random_move_and_serve = Sequence('이동 후 서브', SEQ_random_move, SEQ_turn_cheak)
         

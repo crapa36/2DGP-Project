@@ -1,11 +1,22 @@
-from pico2d import get_time, load_image, SDL_KEYDOWN, SDL_KEYUP, SDLK_SPACE, SDLK_LEFT, SDLK_RIGHT, delay, draw_rectangle
+from pico2d import (
+    get_time,
+    load_image,
+    SDL_KEYDOWN,
+    SDL_KEYUP,
+    SDLK_SPACE,
+    SDLK_LEFT,
+    SDLK_RIGHT,
+    delay,
+    draw_rectangle,
+    load_wav,
+)
 from ball import Ball
 import game_world
 import game_framework
 import score
 
 PIXEL_PER_METER = 10.0 / 0.3  # 10 pixel 30 cm
-RUN_SPEED_KMPH = 20.0  # Km / Hour
+RUN_SPEED_KMPH = 10.0  # Km / Hour
 RUN_SPEED_MPM = RUN_SPEED_KMPH * 1000.0 / 60.0
 RUN_SPEED_MPS = RUN_SPEED_MPM / 60.0
 RUN_SPEED_PPS = RUN_SPEED_MPS * PIXEL_PER_METER
@@ -14,26 +25,34 @@ ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 20
 not_served = True
 
+
 def right_down(e):
     return e[0] == "INPUT" and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_RIGHT
+
 
 def right_up(e):
     return e[0] == "INPUT" and e[1].type == SDL_KEYUP and e[1].key == SDLK_RIGHT
 
+
 def left_down(e):
     return e[0] == "INPUT" and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_LEFT
+
 
 def left_up(e):
     return e[0] == "INPUT" and e[1].type == SDL_KEYUP and e[1].key == SDLK_LEFT
 
+
 def space_down(e):
     return e[0] == "INPUT" and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_SPACE
+
 
 def time_out(e):
     return e[0] == "TIME_OUT"
 
+
 def unserved(e):
     return e[0] == "UNSERVED"
+
 
 class Idle:
     @staticmethod
@@ -46,7 +65,10 @@ class Idle:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 10
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        ) % 10
 
     @staticmethod
     def draw(player):
@@ -58,9 +80,23 @@ class Idle:
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
         if player.face_dir <= 0:
-            player.idleImage.clip_draw(frame_x, frame_y, frame_width, frame_height, player.x, player.y)
+            player.idleImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, player.x, player.y
+            )
         else:
-            player.idleImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", player.x, player.y, 40, 40)
+            player.idleImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                player.x,
+                player.y,
+                40,
+                40,
+            )
+
 
 class Run:
     @staticmethod
@@ -77,7 +113,10 @@ class Run:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 7
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        ) % 7
         player.x += player.dir * RUN_SPEED_PPS * game_framework.frame_time
         if player.x < 25:
             player.x = 25
@@ -94,9 +133,23 @@ class Run:
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
         if player.face_dir <= 0:
-            player.runImage.clip_draw(frame_x, frame_y, frame_width, frame_height, player.x, player.y)
+            player.runImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, player.x, player.y
+            )
         else:
-            player.runImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", player.x, player.y, 40, 40)
+            player.runImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                player.x,
+                player.y,
+                40,
+                40,
+            )
+
 
 class Serve:
     @staticmethod
@@ -105,11 +158,14 @@ class Serve:
 
     @staticmethod
     def exit(player, e):
-        score.player_turn = False
+        player.hit_sound.play()
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time)
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
 
     @staticmethod
     def draw(player):
@@ -121,20 +177,33 @@ class Serve:
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
         if player.face_dir <= 0:
-            player.serveImage.clip_draw(frame_x, frame_y, frame_width, frame_height, player.x, player.y)
+            player.serveImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, player.x, player.y
+            )
         else:
-            player.serveImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", player.x, player.y, 40, 60)
+            player.serveImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                player.x,
+                player.y,
+                40,
+                60,
+            )
         if player.frame >= 11:
             player.fire_ball(player.face_dir * 25, 200)
             player.state_machine.handle_event(("TIME_OUT", 0))
 
+
 class Swing:
     @staticmethod
     def enter(player, e):
-       
         if score.ball.deleted and score.player_turn:
             player.state_machine.handle_event(("UNSERVED", 0))
-            
+
         player.frame = 0
 
     @staticmethod
@@ -143,7 +212,10 @@ class Swing:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time)
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
 
     @staticmethod
     def draw(player):
@@ -155,11 +227,25 @@ class Swing:
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
         if player.face_dir <= 0:
-            player.swingImage.clip_draw(frame_x, frame_y, frame_width, frame_height, player.x, player.y)
+            player.swingImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, player.x, player.y
+            )
         else:
-            player.swingImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", player.x, player.y, 40, 40)
+            player.swingImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                player.x,
+                player.y,
+                40,
+                40,
+            )
         if player.frame >= 5:
             player.state_machine.handle_event(("TIME_OUT", 0))
+
 
 class Stop:
     @staticmethod
@@ -172,7 +258,10 @@ class Stop:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time)
+        player.frame = (
+            player.frame
+            + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+        )
         player.x += (player.dir * RUN_SPEED_PPS * game_framework.frame_time) / 10
 
     @staticmethod
@@ -185,11 +274,25 @@ class Stop:
         frame_x = (frame_index % sheet_columns) * frame_width
         frame_y = (sheet_rows - 1 - frame_index // sheet_columns) * frame_height
         if player.face_dir <= 0:
-            player.stopImage.clip_draw(frame_x, frame_y, frame_width, frame_height, player.x, player.y)
+            player.stopImage.clip_draw(
+                frame_x, frame_y, frame_width, frame_height, player.x, player.y
+            )
         else:
-            player.stopImage.clip_composite_draw(frame_x, frame_y, frame_width, frame_height, 0, "h", player.x, player.y, 40, 40)
+            player.stopImage.clip_composite_draw(
+                frame_x,
+                frame_y,
+                frame_width,
+                frame_height,
+                0,
+                "h",
+                player.x,
+                player.y,
+                40,
+                40,
+            )
         if player.frame >= 10:
             player.state_machine.handle_event(("TIME_OUT", 0))
+
 
 class StateMachine:
     def __init__(self, player):
@@ -240,8 +343,11 @@ class StateMachine:
 
     def draw(self):
         self.cur_state.draw(self.player)
-        
+
+
 class Player:
+    hit_sound = None
+
     def __init__(self):
         self.x, self.y = 175, 120
         self.frame = 0
@@ -254,6 +360,9 @@ class Player:
         self.stopImage = load_image(".\data\player_stop.png")
         self.state_machine = StateMachine(self)
         self.state_machine.start()
+        if not self.hit_sound:
+            self.hit_sound = load_wav(".\\data\\swing_hit.wav")
+            self.hit_sound.set_volume(32)
 
     def update(self):
         self.state_machine.update()
@@ -265,18 +374,22 @@ class Player:
         self.state_machine.draw()
         draw_rectangle(*self.get_bb())
 
-        
-
     def fire_ball(self, x_velocity, y_velocity):
         score.ball = Ball(self.x, self.y + 10, x_velocity, y_velocity)
         game_world.add_object(score.ball, 0)
-        
+
     def get_bb(self):
         return self.x - 10, self.y - 15, self.x + 10, self.y + 10
 
     def handle_collision(self, group, other):
         match group:
-            case 'player:ball':
-               if self.state_machine.cur_state == Swing :
-                    other.x_velocity = -other.x_velocity 
-                    other.y_velocity = -other.y_velocity 
+            case "player:ball":
+                if self.state_machine.cur_state == Swing and other.y_velocity < 0:
+                    if other.x_velocity * self.face_dir < 0:
+                        other.x_velocity = -other.x_velocity
+                    other.x_velocity += (other.x - self.x) * 5
+                    other.y_velocity = -other.y_velocity
+                    other.height = 20
+                    other.height_velocity = 20
+                    self.hit_sound.play()
+                    self.hit_sound.set_volume(32)

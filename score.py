@@ -1,9 +1,5 @@
-from ball import Ball
-
-ball = Ball
-ball.deleted=True
 player_turn = True
-
-
-    
-    
+ball = None
+player = None
+enemy = None
+score = [0, 0]

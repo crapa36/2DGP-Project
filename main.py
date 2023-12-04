@@ -8,4 +8,3 @@ map_width, map_height = 350, 560
 open_canvas(map_width, map_height, sync=True)
 game_framework.run(start_mode)
 close_canvas()
- 

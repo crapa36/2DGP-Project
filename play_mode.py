@@ -9,6 +9,7 @@ import score
 
 map_width, map_height = 350, 560
 
+
 def handle_events():
     events = get_events()
 
@@ -20,26 +21,26 @@ def handle_events():
             game_framework.quit()
 
         else:
-            player.handle_event(event)
-            enemy.handle_event(event)
+            score.player.handle_event(event)
+            score.enemy.handle_event(event)
 
 
 def init():
     global grass
     global world
-    global player
-    global enemy
     world = []
     grass = Grass(175, 280)
     game_world.add_object(grass, 0)
-    player = Player()
-    enemy = Enemy()
-    world.append(player)
-    world.append(enemy)
-    game_world.add_object(player, 1)
-    game_world.add_object(enemy, 1)
-    game_world.add_collision_pair('player:ball', player, None)
-    game_world.add_collision_pair('enemy:ball', enemy, None)
+    score.player = Player()
+    score.enemy = Enemy()
+    world.append(score.player)
+    world.append(score.enemy)
+    game_world.add_object(score.player, 1)
+    game_world.add_object(score.enemy, 1)
+    game_world.add_collision_pair("player:ball", score.player, None)
+    game_world.add_collision_pair("enemy:ball", score.enemy, None)
+    score.ball = Ball
+    score.ball.deleted = True
 
 
 def finish():

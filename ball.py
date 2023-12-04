@@ -1,6 +1,7 @@
-from pico2d import load_image, draw_rectangle
+from pico2d import load_image, draw_rectangle, load_wav
 import game_world
 import game_framework
+import score
 
 TIME_PER_ACTION = 1
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
@@ -10,17 +11,23 @@ FRAMES_PER_ACTION = 20
 class Ball:
     image = None
     shadowImage = None
-    deleted=None
+    deleted = None
+    scored_sound = None
+
     def __init__(self, x=400, y=300, x_velocity=1, y_velocity=1):
         if Ball.image is None:
             Ball.image = load_image("ball.png")
         if Ball.shadowImage is None:
             Ball.shadowImage = load_image("ball_shadow.png")
         self.x, self.y, self.x_velocity, self.y_velocity = x, y, x_velocity, y_velocity
-        self.frame, self.height, self.height_velocity = 0, 10, 25
-        self.deleted=False
-        game_world.add_collision_pair('player:ball', None, self)
-        game_world.add_collision_pair('enemy:ball', None, self)
+        self.frame, self.height, self.height_velocity = 0, 20, 20
+        self.ground_hit_point = None
+        self.deleted = False
+        game_world.add_collision_pair("player:ball", None, self)
+        game_world.add_collision_pair("enemy:ball", None, self)
+        if not Ball.scored_sound:
+            Ball.scored_sound = load_wav(".\\data\\scored.wav")
+            Ball.scored_sound.set_volume(16)
 
     def draw(self):
         frame_width = 10
@@ -36,14 +43,20 @@ class Ball:
         )
         self.shadowImage.draw(self.x, self.y)
         self.height += self.height_velocity * game_framework.frame_time
-        self.height_velocity -= 1
+        self.height_velocity -= 0.5
         if self.height < -2:
+            self.ground_hit_point = self.x
             self.height_velocity = 50
         draw_rectangle(*self.get_bb())
-            
+
     def get_bb(self):
-        return self.x - 5, self.y - 5+  self.height, self.x + 5, self.y + 5 + self.height   
-    
+        return (
+            self.x - 5,
+            self.y - 5 + self.height,
+            self.x + 5,
+            self.y + 5 + self.height,
+        )
+
     def handle_collision(self, group, other):
         pass
 
@@ -55,7 +68,19 @@ class Ball:
         )
         if self.y < 20 or self.y > 560 - 70:
             game_world.remove_object(self)
-            self.deleted=True
-            
-            
-            
+            self.deleted = True
+            self.scored_sound.play()
+            if self.y < 20:
+                if self.ground_hit_point > 65 and self.ground_hit_point < 283:
+                    score.score[0] += 1
+                    score.player_turn = True
+                else:
+                    score.score[1] += 1
+                    score.player_turn = False
+            else:
+                if self.ground_hit_point > 65 and self.ground_hit_point < 283:
+                    score.score[1] += 1
+                    score.player_turn = False
+                else:
+                    score.score[0] += 1
+                    score.player_turn = True

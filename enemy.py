@@ -277,6 +277,17 @@ class Enemy:
         score.ball = Ball(self.x, self.y - 10, -self.face_dir * 25, -200)
         game_world.add_object(score.ball, 0)
         
+    def get_bb(self):
+        return self.x - 10, self.y - 10, self.x + 10, self.y + 10
+
+    def handle_collision(self, group, other):
+        match group:
+            case 'enemy:ball':
+               if self.state_machine.cur_state == Swing:
+                    other.x_velocity = -other.x_velocity 
+                    other.y_velocity = -other.y_velocity 
+    
+        
     def set_target_location(self, x=None, y=None):
         if not x or not y:
             raise ValueError('Location should be given')
@@ -287,14 +298,20 @@ class Enemy:
         self.tx = 150
         # self.tx, self.ty = 1000, 100
         return BehaviorTree.SUCCESS
+    
+    def distance_less_than(self, x1, x2, r):
+        distance2 = abs(x1 - x2)
+        return distance2 < (PIXEL_PER_METER * r)
 
-    def move_to_ball(self, r=0.5):
+    def move_to_ball(self):
         if not self.state_machine.cur_state == Run:
             self.dir=-(self.x-score.ball.x)//abs(self.x-score.ball.x)
             self.state_machine.cur_state = Run
-        if self.ball_distance(score.ball.x, self.x,score.ball.y,self.y,1) or score.ball.y>self.y:
+        if score.ball.y>self.y and (self.dir>0 and self.ball_find(self.y)<=self.x) and (self.dir<0 and self.ball_find(self.y)>=self.x):
+            if self.distance_less_than(self, )
             self.state_machine.cur_state = Stop
             return BehaviorTree.SUCCESS
+        
         else:
             return BehaviorTree.RUNNING
 
@@ -302,9 +319,7 @@ class Enemy:
     def ball_find(self, y):
         return score.ball.x+score.ball.x_velocity*((y-score.ball.y)/score.ball.y_velocity)
     
-    def distance_less_than(self, x1, x2, r):
-        distance2 = abs(x1 - x2)
-        return distance2 < (PIXEL_PER_METER * r)
+    
     
     
     def ball_distance(self, x1, y1, x2, y2, r):

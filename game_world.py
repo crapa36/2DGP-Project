@@ -1,10 +1,14 @@
+import pickle
+
 objects = [[] for _ in range(4)]
 collision_pairs = {}
 
-def add_object(o, depth = 0):
+
+def add_object(o, depth=0):
     objects[depth].append(o)
 
-def add_objects(ol, depth = 0):
+
+def add_objects(ol, depth=0):
     objects[depth] += ol
 
 
@@ -18,6 +22,7 @@ def render():
     for layer in objects:
         for o in layer:
             o.draw()
+
 
 def remove_collision_object(o):
     for pairs in collision_pairs.values():
@@ -56,8 +61,8 @@ def collide(a, b):
 
 def add_collision_pair(group, a, b):
     if group not in collision_pairs:
-        print(f'Added new group {group}')
-        collision_pairs[group] = [ [], [] ]
+        # print(f'Added new group {group}')
+        collision_pairs[group] = [[], []]
     if a:
         collision_pairs[group][0].append(a)
     if b:
@@ -75,3 +80,21 @@ def handle_collisions():
         a.handle_collision(group, b)
         b.handle_collision(group, a)
 
+
+def all_objects():
+    for layer in objects:
+        for o in layer:
+            yield o
+
+
+def save():
+    game = [objects, collision_pairs]
+    with open('game.sav', 'wb') as f:
+        pickle.dump(game, f)
+
+
+def load():
+    global objects, collision_pairs
+    with open('game.sav', 'rb') as f:
+        game = pickle.load(f)
+        objects, collision_pairs = game[0], game[1]

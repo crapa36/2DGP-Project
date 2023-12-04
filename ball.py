@@ -1,4 +1,4 @@
-from pico2d import load_image
+from pico2d import load_image, draw_rectangle
 import game_world
 import game_framework
 
@@ -19,6 +19,8 @@ class Ball:
         self.x, self.y, self.x_velocity, self.y_velocity = x, y, x_velocity, y_velocity
         self.frame, self.height, self.height_velocity = 0, 10, 25
         self.deleted=False
+        game_world.add_collision_pair('player:ball', None, self)
+        game_world.add_collision_pair('enemy:ball', None, self)
 
     def draw(self):
         frame_width = 10
@@ -37,7 +39,13 @@ class Ball:
         self.height_velocity -= 1
         if self.height < -2:
             self.height_velocity = 50
+        draw_rectangle(*self.get_bb())
             
+    def get_bb(self):
+        return self.x - 5, self.y - 5+  self.height, self.x + 5, self.y + 5 + self.height   
+    
+    def handle_collision(self, group, other):
+        pass
 
     def update(self):
         self.x += self.x_velocity * game_framework.frame_time

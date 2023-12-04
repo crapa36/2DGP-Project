@@ -1,4 +1,4 @@
-from pico2d import get_time, load_image, SDL_KEYDOWN, SDL_KEYUP, SDLK_SPACE, SDLK_LEFT, SDLK_RIGHT, delay
+from pico2d import get_time, load_image, SDL_KEYDOWN, SDL_KEYUP, SDLK_SPACE, SDLK_LEFT, SDLK_RIGHT, delay, draw_rectangle
 from ball import Ball
 import game_world
 import game_framework
@@ -240,12 +240,11 @@ class StateMachine:
 
     def draw(self):
         self.cur_state.draw(self.player)
-
+        
 class Player:
     def __init__(self):
         self.x, self.y = 175, 120
         self.frame = 0
-        self.action = 3
         self.dir = 0
         self.face_dir = 1
         self.idleImage = load_image(".\data\player_idle.png")
@@ -264,7 +263,20 @@ class Player:
 
     def draw(self):
         self.state_machine.draw()
+        draw_rectangle(*self.get_bb())
+
+        
 
     def fire_ball(self, x_velocity, y_velocity):
         score.ball = Ball(self.x, self.y + 10, x_velocity, y_velocity)
         game_world.add_object(score.ball, 0)
+        
+    def get_bb(self):
+        return self.x - 10, self.y - 15, self.x + 10, self.y + 10
+
+    def handle_collision(self, group, other):
+        match group:
+            case 'player:ball':
+               if self.state_machine.cur_state == Swing :
+                    other.x_velocity = -other.x_velocity 
+                    other.y_velocity = -other.y_velocity 

@@ -5,6 +5,7 @@ from enemy import Enemy
 from ball import Ball
 import game_world
 import game_framework
+import score
 
 map_width, map_height = 350, 560
 
@@ -37,6 +38,8 @@ def init():
     world.append(enemy)
     game_world.add_object(player, 1)
     game_world.add_object(enemy, 1)
+    game_world.add_collision_pair('player:ball', player, None)
+    game_world.add_collision_pair('enemy:ball', enemy, None)
 
 
 def finish():

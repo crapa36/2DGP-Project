@@ -7,6 +7,7 @@ import game_world
 import game_framework
 import score
 import menu_mode
+
 map_width, map_height = 350, 560
 
 
@@ -40,6 +41,8 @@ def init():
     game_world.add_collision_pair("enemy:ball", score.enemy, None)
     score.ball = Ball
     score.ball.deleted = True
+    draw()
+    game_framework.push_mode(menu_mode)
 
 
 def finish():
@@ -50,22 +53,16 @@ def update():
     game_world.update()
     game_world.handle_collisions()
 
-def load_saved_world():
-    score.player, score.enemy, score.ball = None, None, None
-    game_world.load()
-    for o in game_world.all_objects():
-        if isinstance(o, player):
-            score.player = o
-        elif isinstance(o, enemy):
-            score.enemy = o
-        if score.boy and score.background:
-            break
+
 def draw():
     clear_canvas()
     game_world.render()
     update_canvas()
 
+
 def pause():
     pass
+
+
 def resume():
     pass

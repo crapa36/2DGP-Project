@@ -20,7 +20,7 @@ class Ball:
         if Ball.shadowImage is None:
             Ball.shadowImage = load_image(".\\data\\ball_shadow.png")
         self.x, self.y, self.x_velocity, self.y_velocity = x, y, x_velocity, y_velocity
-        self.frame, self.height, self.height_velocity = 0, 20, 20
+        self.frame, self.height, self.height_velocity = 0, 0.5, 0.25
         self.ground_hit_point = None
         self.deleted = False
         game_world.add_collision_pair("player:ball", None, self)
@@ -42,11 +42,11 @@ class Ball:
             frame_x, frame_y, frame_width, frame_height, self.x, self.y + self.height
         )
         self.shadowImage.draw(self.x, self.y)
-        self.height += self.height_velocity * game_framework.frame_time
-        self.height_velocity -= 0.5
+        self.height += self.height_velocity
+        self.height_velocity -= 0.001
         if self.height < -2:
             self.ground_hit_point = self.x
-            self.height_velocity = 50
+            self.height_velocity = 0.25
         draw_rectangle(*self.get_bb())
 
     def get_bb(self):
@@ -61,12 +61,21 @@ class Ball:
         pass
 
     def __getstate__(self):
-        state = {'x': self.x, 'y': self.y, 'height': self.height,'height_velocity': self.height_velocity,'ground_hit_point': self.ground_hit_point,'x_velocity': self.x_velocity,'x_velocity': self.x_velocity}
+        state = {
+            "x": self.x,
+            "y": self.y,
+            "height": self.height,
+            "height_velocity": self.height_velocity,
+            "ground_hit_point": self.ground_hit_point,
+            "x_velocity": self.x_velocity,
+            "x_velocity": self.x_velocity,
+        }
         return state
+
     def __setstate__(self, state):
         self.__init__()
         self.__dict__.update(state)
-        
+
     def update(self):
         self.x += self.x_velocity * game_framework.frame_time
         self.y += self.y_velocity * game_framework.frame_time

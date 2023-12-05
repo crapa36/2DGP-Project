@@ -395,8 +395,8 @@ class Enemy:
                         other.x_velocity = -other.x_velocity
                     other.x_velocity += (other.x - self.x) * 5
                     other.y_velocity = -other.y_velocity
-                    other.height = 20
-                    other.height_velocity = 20
+                    other.height = 0.5
+                    other.height_velocity = 0.25
                     self.hit_sound.play()
 
     def set_target_location(self, x=None, y=None):

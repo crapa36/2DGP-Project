@@ -16,9 +16,9 @@ class Ball:
 
     def __init__(self, x=400, y=300, x_velocity=1, y_velocity=1):
         if Ball.image is None:
-            Ball.image = load_image("ball.png")
+            Ball.image = load_image(".\\data\\ball.png")
         if Ball.shadowImage is None:
-            Ball.shadowImage = load_image("ball_shadow.png")
+            Ball.shadowImage = load_image(".\\data\\ball_shadow.png")
         self.x, self.y, self.x_velocity, self.y_velocity = x, y, x_velocity, y_velocity
         self.frame, self.height, self.height_velocity = 0, 20, 20
         self.ground_hit_point = None

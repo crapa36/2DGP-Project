@@ -405,11 +405,6 @@ class Enemy:
         self.tx, self.ty = x, y
         return BehaviorTree.SUCCESS
 
-    def set_random_location(self):
-        self.tx = 150
-        # self.tx, self.ty = 1000, 100
-        return BehaviorTree.SUCCESS
-
     def distance_less_than(self, x1, x2, r):
         distance2 = abs(x1 - x2)
         return distance2 < (PIXEL_PER_METER * r)
@@ -418,13 +413,22 @@ class Enemy:
         distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
         return distance2 < (PIXEL_PER_METER * r) ** 2
 
+    def set_random_location(self):
+        self.tx = 150
+        # self.tx, self.ty = 1000, 100
+        return BehaviorTree.SUCCESS
+
     def move_to_ball(self):
         if (
             score.ball.y > self.y
-            or (self.dir > 0 and self.ball_find(self.y) <= self.x + 5)
-            or (self.dir < 0 and self.ball_find(self.y) >= self.x - 5)
+            or (self.dir > 0 and self.ball_find(self.y) <= self.x + 3)
+            or (self.dir < 0 and self.ball_find(self.y) >= self.x - 3)
         ):
-            if self.y - 30 < score.ball.y:
+            if (
+                self.y - 30 < score.ball.y
+                and score.ball.ground_hit_point > 65
+                and score.ball.ground_hit_point < 283
+            ):
                 self.dir = -(self.x - score.player.x) / (abs(self.x - score.player.x))
                 self.state_machine.handle_event(("swing_now", 0))
                 return BehaviorTree.SUCCESS
@@ -435,7 +439,7 @@ class Enemy:
                 print(self.state_machine.cur_state)
                 self.state_machine.cur_state = Idle
             return BehaviorTree.SUCCESS
-        elif self.state_machine.cur_state == Idle:
+        if self.state_machine.cur_state == Idle:
             self.dir = -(self.x - self.ball_find(self.y)) // abs(
                 self.x - self.ball_find(self.y)
             )
@@ -448,18 +452,23 @@ class Enemy:
         )
 
     def serve(self):
-        self.state_machine.handle_event(("serve_now", 0))
+        if self.x < 100:
+            self.move_to(100)
+        elif self.x > 200:
+            self.move_to(200)
+        else:
+            self.state_machine.handle_event(("serve_now", 0))
 
         return BehaviorTree.RUNNING
 
-    def move_to(self, r=10):
-        if self.distance_less_than(self.tx, self.x, r):
+    def move_to(self, tx):
+        if (self.dir > 0 and tx < self.x) or (self.dir < 0 and tx > self.x):
             self.state_machine.handle_event(("stop_now", 0))
             return BehaviorTree.SUCCESS
         else:
             if not self.state_machine.cur_state == Run:
                 self.state_machine.handle_event(("start_run", 0))
-            self.dir = -(self.x - self.tx) / (abs(self.x - self.tx))
+            self.dir = -(self.x - tx) / (abs(self.x - tx))
             return BehaviorTree.RUNNING
 
     def serve_cheak(self):
@@ -475,6 +484,7 @@ class Enemy:
                 and not self.state_machine.cur_state == Stop
             ):
                 self.state_machine.handle_event(("stop_now", 0))
+
             return BehaviorTree.FAIL
         else:
             return BehaviorTree.SUCCESS
@@ -486,8 +496,8 @@ class Enemy:
 
     def build_behavior_tree(self):
         a0 = Action("대기", self.stay)
-        a2 = Action("Move to", self.move_to)
-        root = SEQ_move_than_stay = Sequence("이동 후 대기", a2, a0)
+        # a2 = Action("Move to", self.move_to)
+        root = SEQ_move_than_stay = Sequence("이동 후 대기", a0, a0)
         a3 = Action("Set random location", self.set_random_location)
         root = SEQ_random_move = Sequence("위치 설정 후 이동", a3, SEQ_move_than_stay)
 

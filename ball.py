@@ -11,7 +11,7 @@ FRAMES_PER_ACTION = 20
 class Ball:
     image = None
     shadowImage = None
-    deleted = None
+    deleted = True
     scored_sound = None
 
     def __init__(self, x=400, y=300, x_velocity=1, y_velocity=1):
@@ -60,6 +60,13 @@ class Ball:
     def handle_collision(self, group, other):
         pass
 
+    def __getstate__(self):
+        state = {'x': self.x, 'y': self.y, 'height': self.height,'height_velocity': self.height_velocity,'ground_hit_point': self.ground_hit_point,'x_velocity': self.x_velocity,'x_velocity': self.x_velocity}
+        return state
+    def __setstate__(self, state):
+        self.__init__()
+        self.__dict__.update(state)
+        
     def update(self):
         self.x += self.x_velocity * game_framework.frame_time
         self.y += self.y_velocity * game_framework.frame_time

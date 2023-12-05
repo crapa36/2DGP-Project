@@ -22,6 +22,6 @@ class Grass:
         self.numbers_image.clip_draw(
             score.score[0] * 170, 0, 170, 200, 230, 560 - 28, 34, 40
         )
-
+    
     def update(self):
         pass

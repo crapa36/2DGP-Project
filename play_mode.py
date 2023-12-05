@@ -6,7 +6,7 @@ from ball import Ball
 import game_world
 import game_framework
 import score
-
+import menu_mode
 map_width, map_height = 350, 560
 
 
@@ -18,8 +18,7 @@ def handle_events():
             game_framework.quit()
 
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            game_framework.quit()
-
+            game_framework.push_mode(menu_mode)
         else:
             score.player.handle_event(event)
             score.enemy.handle_event(event)
@@ -51,8 +50,22 @@ def update():
     game_world.update()
     game_world.handle_collisions()
 
-
+def load_saved_world():
+    score.player, score.enemy, score.ball = None, None, None
+    game_world.load()
+    for o in game_world.all_objects():
+        if isinstance(o, player):
+            score.player = o
+        elif isinstance(o, enemy):
+            score.enemy = o
+        if score.boy and score.background:
+            break
 def draw():
     clear_canvas()
     game_world.render()
     update_canvas()
+
+def pause():
+    pass
+def resume():
+    pass

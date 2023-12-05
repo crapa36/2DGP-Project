@@ -372,7 +372,7 @@ class Player:
 
     def draw(self):
         self.state_machine.draw()
-        draw_rectangle(*self.get_bb())
+        # draw_rectangle(*self.get_bb())
 
     def fire_ball(self, x_velocity, y_velocity):
         score.ball = Ball(self.x, self.y + 10, x_velocity, y_velocity)

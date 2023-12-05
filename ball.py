@@ -47,7 +47,7 @@ class Ball:
         if self.height < -2:
             self.ground_hit_point = self.x
             self.height_velocity = 0.25
-        draw_rectangle(*self.get_bb())
+        # draw_rectangle(*self.get_bb())
 
     def get_bb(self):
         return (
